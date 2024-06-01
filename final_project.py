@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score, roc_curve
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV, RandomizedSearchCV
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 
 def gini(y, weight):
     classes = np.unique(y)
@@ -202,6 +203,30 @@ if __name__ == "__main__":
     plt.ylabel('True Positive Rate')
     plt.show()
     
+    # The plot tree func need to use the class in sklearn.
+    
+    tree = DecisionTreeClassifier(criterion='gini', max_depth=7)
+    tree.fit(X_train, y_train)
+    
+    plt.figure(figsize=(20,10))
+    plot_tree(tree, filled=True, feature_names=train_df.columns[:-1], class_names=["Class 0", "Class 1"])
+    plt.title("Decision Tree")
+    plt.show()
+
+    feature_importances = tree.feature_importances_
+    features = train_df.columns[:-1]
+    indices = np.argsort(feature_importances)[::-1]
+
+    plt.figure(figsize=(10, 6))
+    plt.title("Feature Importances")
+    plt.bar(range(X_train.shape[1]), feature_importances[indices], align="center")
+    plt.xticks(range(X_train.shape[1]), features[indices], rotation=90)
+    plt.xlim([-1, X_train.shape[1]])
+    plt.show()
+
+    for f in range(X_train.shape[1]):
+        print(f"{features[indices[f]]}: {feature_importances[indices[f]]:.4f}")
+    
     print("------------------------------------------------------------------")
     
     # Bayesian classification
@@ -240,11 +265,15 @@ if __name__ == "__main__":
     # KNN
     k_range = range(2, 15)
     k_scores = []
+    
+    # kfold
+    kf = StratifiedKFold(n_splits=10)
+    
     for k in k_range:
         knn_model = KNeighborsClassifier(n_neighbors=k)
-        accuracy = cross_val_score(knn_model, X_train, y_train, cv=10, scoring="accuracy")
-        print("K=" + str(k) + " Accuracy= " + str(accuracy.mean()))
-        k_scores.append(accuracy.mean())
+        scores = cross_val_score(knn_model, X_train, y_train, cv=kf, scoring="accuracy")
+        print(f"K={k} Accuracy= {scores.mean()}")
+        k_scores.append(scores.mean())
 
     best_k = k_scores.index(max(k_scores)) + 2
     print("Best K:", best_k)
@@ -291,3 +320,63 @@ if __name__ == "__main__":
     ada_knn.fit(X_train, y_train)
     y_pred = ada_knn.predict(X_test)
     print("Accuracy:", accuracy_score(y_test, y_pred))
+    
+    print("------------------------------------------------------------------")
+    
+    param_grid = {
+        'n_neighbors': range(2, 15),
+        'weights': ['uniform', 'distance'],
+        'metric': ['euclidean', 'manhattan', 'minkowski']
+    }
+    grid_search = GridSearchCV(KNeighborsClassifier(), param_grid, cv=10, scoring='accuracy')
+    grid_search.fit(X_train, y_train)
+    print("Best parameters found by Grid Search:", grid_search.best_params_)
+    
+    param_dist = {
+        'n_neighbors': range(2, 15),
+        'weights': ['uniform', 'distance'],
+        'metric': ['euclidean', 'manhattan', 'minkowski']
+    }
+    random_search = RandomizedSearchCV(KNeighborsClassifier(), param_dist, n_iter=20, cv=10, scoring='accuracy', random_state=0)
+    random_search.fit(X_train, y_train)
+    print("Best parameters found by Random Search:", random_search.best_params_)
+    
+    print("------------------------------------------------------------------")
+    
+    knn_model = grid_search.best_estimator_
+    y_pred = knn_model.predict(X_test)
+
+    print("KNN accuracy:", accuracy_score(y_test, y_pred))
+    print("Precision:", precision_score(y_test, y_pred))
+    print("Recall:", recall_score(y_test, y_pred))
+    print("F1-score:", f1_score(y_test, y_pred))
+
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_pred)
+    print("AUC:", auc)
+
+    plt.plot(fpr, tpr, marker='.')
+    plt.title('ROC Curve (KNN -- Grid)')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.show()
+
+    print("------------------------------------------------------------------")
+    
+    knn_model = random_search.best_estimator_
+    y_pred = knn_model.predict(X_test)
+
+    print("KNN accuracy:", accuracy_score(y_test, y_pred))
+    print("Precision:", precision_score(y_test, y_pred))
+    print("Recall:", recall_score(y_test, y_pred))
+    print("F1-score:", f1_score(y_test, y_pred))
+
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_pred)
+    print("AUC:", auc)
+
+    plt.plot(fpr, tpr, marker='.')
+    plt.title('ROC Curve (KNN -- Random)')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.show()
