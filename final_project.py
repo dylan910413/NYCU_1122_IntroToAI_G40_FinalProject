@@ -2,6 +2,8 @@ import numpy as np
 from pandas import DataFrame, read_csv
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+
 
 def gini(y, weight):
     classes = np.unique(y)
@@ -151,9 +153,36 @@ if __name__ == "__main__":
     y_pred = tree.predict(X_test)
     print("Accuracy (gini with max_depth=7):", accuracy_score(y_test, y_pred))
     
+    f1 = f1_score(y_test, y_pred)
+    print("f1:", f1)
+    
+    print("------------------------------------------------------------------")
+    
 # Plotting the feature importance
     # columns = train_df.iloc[:, :-1].columns
     # tree.plot_feature_importance_img(columns)
+    
+    # Bayesian classification
+    
+    model1 = GaussianNB()
+    model1.fit(X_train, y_train)
+    model2 = MultinomialNB()
+    model2.fit(X_train, y_train)
+    model3 = BernoulliNB()
+    model3.fit(X_train, y_train)
+    
+    
+    print("GaussianNB accuracy:", model1.score(X_test, y_test))
+    f1 = f1_score(y_test, y_pred)
+    print("f1:", f1)
+    print("MultinomialNB accuracy:", model1.score(X_test, y_test))
+    f1 = f1_score(y_test, y_pred)
+    print("f1:", f1)
+    print("BernoulliNB accuracy:", model1.score(X_test, y_test))
+    f1 = f1_score(y_test, y_pred)
+    print("f1:", f1)
+    
+    print("------------------------------------------------------------------")
 
 # AdaBoost
     print("AdaBoost")
@@ -161,3 +190,6 @@ if __name__ == "__main__":
     ada.fit(X_train, y_train)
     y_pred = ada.predict(X_test)
     print("Accuracy:", accuracy_score(y_test, y_pred))
+    
+    f1 = f1_score(y_test, y_pred)
+    print("f1:", f1)
