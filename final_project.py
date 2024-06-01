@@ -1,7 +1,7 @@
 import numpy as np
 from pandas import DataFrame, read_csv
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score, roc_curve
 from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
@@ -188,9 +188,19 @@ if __name__ == "__main__":
     tree.fit(X_train, y_train)
     y_pred = tree.predict(X_test)
     print("Accuracy (gini with max_depth=7):", accuracy_score(y_test, y_pred))
+    print("Precision:", precision_score(y_test, y_pred))
+    print("Recall:", recall_score(y_test, y_pred))
+    print("F1-score:", f1_score(y_test, y_pred))
     
-    f1 = f1_score(y_test, y_pred)
-    print("f1:", f1)
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_pred)
+    print("AUC:", auc)
+
+    plt.plot(fpr, tpr, marker='.')
+    plt.title('ROC Curve (Decision Tree)')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.show()
     
     print("------------------------------------------------------------------")
     
@@ -207,6 +217,25 @@ if __name__ == "__main__":
     print("BernoulliNB accuracy:", model3.score(X_test, y_test))
     
     print("------------------------------------------------------------------")
+    print("Below are from GaussianNB.")
+    
+    y_pred = model1.predict(X_test)
+    
+    print("Precision:", precision_score(y_test, y_pred))
+    print("Recall:", recall_score(y_test, y_pred))
+    print("F1-score:", f1_score(y_test, y_pred))
+    
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_pred)
+    print("AUC:", auc)
+
+    plt.plot(fpr, tpr, marker='.')
+    plt.title('ROC Curve (GaussianNB)')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.show()
+    
+    print("------------------------------------------------------------------")
     
     # KNN
     k_range = range(2, 15)
@@ -219,12 +248,23 @@ if __name__ == "__main__":
 
     best_k = k_scores.index(max(k_scores)) + 2
     print("Best K:", best_k)
+    
+    knn_model = KNeighborsClassifier(n_neighbors=best_k)
+    knn_model.fit(X_train, y_train)
+    y_pred = knn_model.predict(X_test)
+    
+    print("Precision:", precision_score(y_test, y_pred))
+    print("Recall:", recall_score(y_test, y_pred))
+    print("F1-score:", f1_score(y_test, y_pred))
+    
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_pred)
+    print("AUC:", auc)
 
-    # Visualization
-    plt.plot(k_range, k_scores, marker='o')
-    plt.title('Best K:')
-    plt.xlabel('K')
-    plt.ylabel('Accuracy')
+    plt.plot(fpr, tpr, marker='.')
+    plt.title('ROC Curve (GaussianNB)')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
     plt.show()
     
     print("------------------------------------------------------------------")
@@ -236,14 +276,15 @@ if __name__ == "__main__":
     y_pred = ada.predict(X_test)
     print("Accuracy:", accuracy_score(y_test, y_pred))
     
-    f1 = f1_score(y_test, y_pred)
-    print("f1:", f1)
+    print("------------------------------------------------------------------")
     
     print("Adaboost with GaussianNB")
     ada_gnb = AdaBoost2(base_estimator=GaussianNB, n_estimators=50)
     ada_gnb.fit(X_train, y_train)
     y_pred = ada_gnb.predict(X_test)
     print("Accuracy:", accuracy_score(y_test, y_pred))
+    
+    print("------------------------------------------------------------------")
 
     print("Adaboost with KNN (Best K)")
     ada_knn = AdaBoost2(base_estimator=lambda: KNeighborsClassifier(n_neighbors=best_k), n_estimators=50)
